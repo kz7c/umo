@@ -60,7 +60,7 @@ client.on('messageCreate', async (message) => {
 
   // Gemini に渡す会話履歴
   const history: {
-    role: 'user' | 'assistant';
+    role: 'user' | 'model';
     content: string;
   }[] = [];
 
@@ -72,7 +72,7 @@ client.on('messageCreate', async (message) => {
     if (msg.author.id === client.user?.id) {// 羽毛の発言
 
       history.push({
-        role: 'assistant',
+        role: 'model',
         content: `${msg.content}`,
       });
 
