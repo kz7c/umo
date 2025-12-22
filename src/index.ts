@@ -1,7 +1,7 @@
-import { web } from './web';
+import { web } from './components/web';
 import 'dotenv/config';
 import { Client, GatewayIntentBits } from 'discord.js';
-import { gemini } from './gemini';
+import { gemini } from './components/gemini';
 
 
 const client = new Client({
