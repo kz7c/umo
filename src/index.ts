@@ -1,3 +1,4 @@
+import { web } from './web';
 import 'dotenv/config';
 import { Client, GatewayIntentBits } from 'discord.js';
 import { gemini } from './gemini';
@@ -127,3 +128,6 @@ client.on('messageCreate', async (message) => {
 
 // Discord にログイン
 client.login(process.env.DISCORD_TOKEN);
+
+// web サーバーの起動
+web();
