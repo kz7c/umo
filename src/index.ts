@@ -53,44 +53,60 @@ client.on('messageCreate', async (message) => {
 
 
   // メンション部分を除去して質問文だけを取得
-  const ask = message.content.replace(new RegExp(`<@!?${client.user.id}>`, 'g'), '').trim();
+  const ask = message.content.slice(`<@!?${client.user.id}>`.length - 1).trim();
 
-  // 過去メッセージを最大4件取得
-  const fetchedMessages = await message.channel.messages.fetch({ limit: 4});
+  // 直近のメッセージを取得（今の message は除外）
+  let fetchedMessages;
+
+  if (message.channel.isThread()) {
+    // スレッド内：直前の8件
+    fetchedMessages = await message.channel.messages.fetch({
+      limit: 8,
+      before: message.id,
+    });
+
+  } else {
+    // 通常チャンネル：直前の8件
+    fetchedMessages = await message.channel.messages.fetch({
+      limit: 4,
+      before: message.id,
+    });
+
+  }
 
   // Gemini に渡す会話履歴
   const history: {
     role: 'user' | 'model';
-    content: string;
+    parts: { text: string }[];
   }[] = [];
 
-  // 古い順に並び替え
-  fetchedMessages.reverse().forEach(msg => {
+  // role と content に分けて履歴を整形
+  fetchedMessages.forEach(msg => {
 
     const name = msg.author.globalName ?? msg.author.username;
 
     if (msg.author.id === client.user?.id) {// 羽毛の発言
-
+    
       history.push({
         role: 'model',
-        content: `${msg.content}`,
+        parts: [{ text: `${msg.content}` }],
       });
 
     } else {// 他者の発言
       
       history.push({
         role: 'user',
-        content: `${name}:${msg.content}`,
+        parts: [{ text: `${name}:${msg.content}` }],
       });
     
     }
 
   });
 
+
   try{
 
     try {
-      
       // Gemini API に質問＋履歴を送信
       const result = await gemini(ask, history);
 
@@ -111,7 +127,7 @@ client.on('messageCreate', async (message) => {
     } catch (error) {// Gemini のエラー
       
       await message.reply({
-        content: `処理中にエラーが発生しました。`,
+        content: 'Gemini API エラーが発生しました。',
         allowedMentions: { repliedUser: false },
       });
     
