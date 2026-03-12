@@ -2,7 +2,7 @@ import { web } from './components/web';
 import 'dotenv/config';
 import { Client, GatewayIntentBits } from 'discord.js';
 import { gemini } from './components/gemini';
-
+import getReplyChain from './functions/getReplyChain';
 
 const client = new Client({
   intents: [
@@ -50,7 +50,7 @@ client.on('messageCreate', async (message) => {
 
 
   // ===================================ここから正常な処理===================================
-
+  await message.channel.sendTyping(); 
 
   // メンション部分を除去して質問文だけを取得
   const ask = message.content.slice(`<@!?${client.user.id}>`.length - 1).trim();
@@ -58,22 +58,25 @@ client.on('messageCreate', async (message) => {
   // 直近のメッセージを取得（今の message は除外）
   let fetchedMessages;
 
-  if (message.channel.isThread()) {
-    // スレッド内：直前の8件
+  // 返信チェーン全てを取得
+  fetchedMessages = await getReplyChain(message);
+  /*if (message.channel.isThread()) {
+    // スレッド内：直前の20件
     fetchedMessages = await message.channel.messages.fetch({
-      limit: 8,
+      limit: 20,
       before: message.id,
     });
 
   } else {
-    // 通常チャンネル：直前の8件
+    // 通常チャンネル：直前の10件
     fetchedMessages = await message.channel.messages.fetch({
-      limit: 4,
+      limit: 10,
       before: message.id,
     });
 
-  }
+  }*/
 
+  console.log(fetchedMessages);
   // Gemini に渡す会話履歴
   const history: {
     role: 'user' | 'model';
@@ -102,8 +105,8 @@ client.on('messageCreate', async (message) => {
     }
 
   });
-
-
+  console.log(JSON.stringify(history, null, 2));
+  
   try{
 
     try {
