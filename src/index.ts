@@ -76,7 +76,8 @@ client.on('messageCreate', async (message) => {
 
   }*/
 
-  console.log(fetchedMessages);
+  // console.log(fetchedMessages);
+  
   // Gemini に渡す会話履歴
   const history: {
     role: 'user' | 'model';
@@ -105,7 +106,7 @@ client.on('messageCreate', async (message) => {
     }
 
   });
-  console.log(JSON.stringify(history, null, 2));
+  // console.log(JSON.stringify(history, null, 2));
   
   try{
 
