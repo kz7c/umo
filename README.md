@@ -1,1 +1,1 @@
-# 羽毛　Discord AIアシスタント
+# 羽毛　~Discord AIアシスタント~
