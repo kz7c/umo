@@ -12,8 +12,8 @@
     "url": "git+https://github.com/kazu70/umo.git"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "kz7c",
+  "license": "GPL-3.0",
   "type": "commonjs",
   "bugs": {
     "url": "https://github.com/kazu70/umo/issues"
