@@ -148,16 +148,14 @@ client.on('messageCreate', async (message) => {
         break; // 成功したらループを抜ける
 
       } catch (error: any) {// Gemini のエラー
-        
-        await message.reply({
-          content: `Gemini API エラーが発生しました。`,
-          allowedMentions: { repliedUser: false },
-        });
-        console.error("Gemini API エラー:", error);
-        
-        if(error?.status !== 500 && error?.statusCode !== 500 && !error?.message?.includes('500')){
-          break;// 500エラー以外は再試行しない
+        if(error?.status !== 500 && error?.statusCode !== 500 && !error?.message?.includes('500')){// 500エラー以外は再試行しない
+          await message.reply({
+            content: `Gemini API エラーが発生しました。`,
+            allowedMentions: { repliedUser: false },
+          });
+          break;
         }
+        console.error("Gemini API エラー:", error);
       }
 
       tryon++;
