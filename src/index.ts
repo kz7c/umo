@@ -126,6 +126,8 @@ client.on('messageCreate', async (message) => {
   try{
 
     let tryon = 0;// 再試行のカウンター変数
+    let success = false;
+
     while(tryon < 5) {
       try {
         // Gemini API に質問＋履歴＋画像を送信
@@ -145,6 +147,7 @@ client.on('messageCreate', async (message) => {
 
         }
 
+        success = true;
         break; // 成功したらループを抜ける
 
       } catch (error: any) {// Gemini のエラー
@@ -162,10 +165,13 @@ client.on('messageCreate', async (message) => {
       await new Promise(resolve => setTimeout(resolve, 1000 * (2 ** tryon))); // 再試行前に待機（指数関数的に増加）
     }
 
-    await message.reply({// 最終的に全ての試行で失敗した場合のメッセージ
-      content: `Gemini API エラーが発生しました。再試行を試みましたが、残念ながら回答を取得できませんでした。`,
-      allowedMentions: { repliedUser: false },
-    });
+    // 失敗時のみエラーメッセージを送信
+    if (!success) {
+      await message.reply({
+        content: `Gemini API エラーが発生しました。再試行を試みましたが、残念ながら回答を取得できませんでした。`,
+        allowedMentions: { repliedUser: false },
+      });
+    }
 
   } catch(error) {// Geminiのエラーすら返信できない場合
 
