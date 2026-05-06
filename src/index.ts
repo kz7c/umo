@@ -162,6 +162,11 @@ client.on('messageCreate', async (message) => {
       await new Promise(resolve => setTimeout(resolve, 1000 * (2 ** tryon))); // 再試行前に待機（指数関数的に増加）
     }
 
+    await message.reply({// 最終的に全ての試行で失敗した場合のメッセージ
+      content: `Gemini API エラーが発生しました。再試行を試みましたが、残念ながら回答を取得できませんでした。`,
+      allowedMentions: { repliedUser: false },
+    });
+
   } catch(error) {// Geminiのエラーすら返信できない場合
 
     console.error("Discordエラー： Gemini のエラーの返信先が見つかりませんでした。");
