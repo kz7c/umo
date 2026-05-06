@@ -124,7 +124,7 @@ client.on('messageCreate', async (message) => {
       
       } catch (sendError) {// 返信できなかった場合
     
-        console.error("エラー：返信先が見つかりませんでした。");
+        console.error("Discordエラー：返信先が見つかりませんでした。");
 
       }
 
@@ -140,7 +140,7 @@ client.on('messageCreate', async (message) => {
 
   } catch(error) {// Geminiのエラーすら返信できない場合
 
-    console.error("エラー： Gemini のエラーの返信先が見つかりませんでした。");
+    console.error("Discordエラー： Gemini のエラーの返信先が見つかりませんでした。");
   
   }
 
