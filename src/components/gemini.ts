@@ -16,7 +16,8 @@ type ImageData = {
 export async function imageUrlToBase64(imageUrl: string): Promise<ImageData | null> {
   try {
     const response = await fetch(imageUrl);
-    const buffer = await response.buffer();
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
     const base64 = buffer.toString('base64');
     
     const contentType = response.headers.get('content-type');
@@ -41,18 +42,6 @@ const MAX_DEPTH = 5;// 無限ループ防止のため、ツール呼び出しの
 
 // 使わせたいツール宣言（Geminiに「こういう関数がある」と教える）
 const tools: FunctionDeclaration[] = [
-  /*{
-    name: 'search',
-    description: 'Web search (Google Custom Search).',
-    parameters: {
-      type: Type.OBJECT,
-      properties: {
-        query: { type: Type.STRING },
-        reason: { type: Type.STRING, description: 'Reason (in Japanese)' },
-      },
-      required: ['query', 'reason'],
-    },
-  },*/
   {
     name: 'nowTime',
     description: 'Get the current time.',
