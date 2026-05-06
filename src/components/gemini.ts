@@ -10,7 +10,7 @@ const SYSTEM_PROMPT = `あなたはDiscord上で活動する「羽毛bot」と�
 
 export async function gemini(ask: string, history: { role: 'user' | 'model'; parts: { text: string }[] }[]) {
   const chat = ai.chats.create({
-    model: "gemma-3-27b-it",
+    model: "gemma-4-31b-it",
     history: [
       {
         role: 'user',

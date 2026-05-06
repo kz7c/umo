@@ -131,9 +131,10 @@ client.on('messageCreate', async (message) => {
     } catch (error) {// Gemini のエラー
       
       await message.reply({
-        content: 'Gemini API エラーが発生しました。',
+        content: `Gemini API エラーが発生しました。`,
         allowedMentions: { repliedUser: false },
       });
+      console.error("Gemini API エラー:", error);
     
     }
 
