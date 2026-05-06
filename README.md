@@ -16,15 +16,6 @@ Discord上で動作する、Google Gemini APIを活用したAIチャットボッ
 - Discord Bot トークン
 - Google Gemini API キー
 
-## インストール
-
-1. リポジトリをクローンまたはダウンロードします。
-2. 必要なパッケージをインストールします。
-
-   ```bash
-   npm install
-   ```
-
 ## 設定
 
 プロジェクトのルートディレクトリに `.env` ファイルを作成し、以下の環境変数を設定してください。
@@ -66,7 +57,7 @@ npm start
   - `@google/genai`: Gemini APIの利用
   - `express`: Webサーバー
   - `dotenv`: 環境変数の管理
-
+  - `node-fetch`: 画像処理に使用
 ## ライセンス
 
 [GNU GENERAL PUBLIC LICENSE](LICENSE)
