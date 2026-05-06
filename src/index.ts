@@ -1,7 +1,7 @@
 import { web } from './components/web';
 import 'dotenv/config';
 import { Client, GatewayIntentBits } from 'discord.js';
-import { gemini } from './components/gemini';
+import { gemini, imageUrlToBase64 } from './components/gemini';
 import getReplyChain from './components/getReplyChain';
 
 const client = new Client({
@@ -54,6 +54,8 @@ client.on('messageCreate', async (message) => {
 
   // メンション部分を除去して質問文だけを取得
   const ask = message.content.slice(`<@!?${client.user.id}>`.length - 1).trim();
+
+  console.log(`質問: ${ask}`);
 
   // 直近のメッセージを取得（今の message は除外）
   let fetchedMessages;
@@ -108,11 +110,24 @@ client.on('messageCreate', async (message) => {
   });
   // console.log(JSON.stringify(history, null, 2));
   
+  // 画像を取得
+  const images: any[] = [];
+  if (message.attachments.size > 0) {
+    for (const [_, attachment] of message.attachments) {
+      if (attachment.contentType?.startsWith('image/')) {
+        const imageData = await imageUrlToBase64(attachment.url);
+        if (imageData) {
+          images.push(imageData);
+        }
+      }
+    }
+  }
+  
   try{
 
     try {
-      // Gemini API に質問＋履歴を送信
-      const result = await gemini(ask, history);
+      // Gemini API に質問＋履歴＋画像を送信
+      const result = await gemini(ask, history, images.length > 0 ? images : undefined);
 
       try {
       
@@ -124,7 +139,7 @@ client.on('messageCreate', async (message) => {
       
       } catch (sendError) {// 返信できなかった場合
     
-        console.error("エラー：返信先が見つかりませんでした。");
+        console.error("Discordエラー：返信先が見つかりませんでした。");
 
       }
 
@@ -140,7 +155,7 @@ client.on('messageCreate', async (message) => {
 
   } catch(error) {// Geminiのエラーすら返信できない場合
 
-    console.error("エラー： Gemini のエラーの返信先が見つかりませんでした。");
+    console.error("Discordエラー： Gemini のエラーの返信先が見つかりませんでした。");
   
   }
 
