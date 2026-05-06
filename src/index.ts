@@ -125,32 +125,43 @@ client.on('messageCreate', async (message) => {
   
   try{
 
-    try {
-      // Gemini API に質問＋履歴＋画像を送信
-      const result = await gemini(ask, history, images.length > 0 ? images : undefined);
-
+    let tryon = 0;// 再試行のカウンター変数
+    while(tryon < 5) {
       try {
+        // Gemini API に質問＋履歴＋画像を送信
+        const result = await gemini(ask, history, images.length > 0 ? images : undefined);
+
+        try {
+        
+          // 生成結果をメンションせずに Discord に送信
+          await message.reply({
+            content: result,
+            allowedMentions: { repliedUser: false },
+          });
+        
+        } catch (sendError) {// 返信できなかった場合
       
-        // 生成結果をメンションせずに Discord に送信
+          console.error("Discordエラー：返信先が見つかりませんでした。");
+
+        }
+
+        break; // 成功したらループを抜ける
+
+      } catch (error: any) {// Gemini のエラー
+        
         await message.reply({
-          content: result,
+          content: `Gemini API エラーが発生しました。`,
           allowedMentions: { repliedUser: false },
         });
-      
-      } catch (sendError) {// 返信できなかった場合
-    
-        console.error("Discordエラー：返信先が見つかりませんでした。");
-
+        console.error("Gemini API エラー:", error);
+        
+        if(error?.status !== 500 && error?.statusCode !== 500 && !error?.message?.includes('500')){
+          break;// 500エラー以外は再試行しない
+        }
       }
 
-    } catch (error) {// Gemini のエラー
-      
-      await message.reply({
-        content: `Gemini API エラーが発生しました。`,
-        allowedMentions: { repliedUser: false },
-      });
-      console.error("Gemini API エラー:", error);
-    
+      tryon++;
+      await new Promise(resolve => setTimeout(resolve, 1000 * (2 ** tryon))); // 再試行前に待機（指数関数的に増加）
     }
 
   } catch(error) {// Geminiのエラーすら返信できない場合
