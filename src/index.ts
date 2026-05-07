@@ -54,7 +54,9 @@ client.on('messageCreate', async (message) => {
 
 
   // ===================================ここから正常な処理===================================
-  await message.channel.sendTyping(); 
+  const typingInterval = setInterval(() => {// タイピングインジケーターを定期的に送信
+    message.channel.sendTyping().catch(console.error);
+  }, 3000);
 
   // 質問を取得
   const ask = message.content;
@@ -178,10 +180,14 @@ client.on('messageCreate', async (message) => {
     }
 
   } catch(error) {// Geminiのエラーすら返信できない場合
-
     console.error("Discordエラー： Gemini のエラーの返信先が見つかりませんでした。");
   
+  } finally {
+    clearInterval(typingInterval);// タイピングインジケーター停止
+    console.log("タスク完了");
+  
   }
+
 
 });
 
