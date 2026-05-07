@@ -3,6 +3,7 @@ import 'dotenv/config';
 import { Client, GatewayIntentBits } from 'discord.js';
 import { gemini, imageUrlToBase64 } from './components/gemini';
 import getReplyChain from './components/getReplyChain';
+import { setDiscordClient } from './tools/getDiscordInfo';
 
 const client = new Client({
   intents: [
@@ -20,6 +21,8 @@ client.once('clientReady', () => {
     console.error("致命的なエラー：client.user が未定義です。");
     process.exit(1);
   }
+
+  setDiscordClient(client);
 
   console.log("==============================");
   console.log(`Bot起動しました: ${client.user.tag}`);
@@ -53,7 +56,7 @@ client.on('messageCreate', async (message) => {
   // ===================================ここから正常な処理===================================
   await message.channel.sendTyping(); 
 
-  // メンション部分を除去して質問文だけを取得
+  // 質問を取得
   const ask = message.content;
 
   console.log(`質問: ${ask}`);
@@ -79,7 +82,7 @@ client.on('messageCreate', async (message) => {
 
   }*/
 
-  // console.log(fetchedMessages);
+  //console.log(fetchedMessages);
   
   // Gemini に渡す会話履歴
   const history: {
@@ -139,7 +142,7 @@ client.on('messageCreate', async (message) => {
           // 生成結果をメンションせずに Discord に送信
           await message.reply({
             content: result,
-            allowedMentions: { repliedUser: false },
+            //allowedMentions: { repliedUser: false },
           });
         
         } catch (sendError) {// 返信できなかった場合
@@ -155,7 +158,7 @@ client.on('messageCreate', async (message) => {
         if(error?.status !== 500 && error?.statusCode !== 500 && !error?.message?.includes('500')){// 500エラー以外は再試行しない
           await message.reply({
             content: `Gemini API エラーが発生しました。`,
-            allowedMentions: { repliedUser: false },
+            // allowedMentions: { repliedUser: false },
           });
           break;
         }
@@ -170,7 +173,7 @@ client.on('messageCreate', async (message) => {
     if (!success) {
       await message.reply({
         content: `Gemini API エラーが発生しました。再試行を試みましたが、残念ながら回答を取得できませんでした。`,
-        allowedMentions: { repliedUser: false },
+        // allowedMentions: { repliedUser: false },
       });
     }
 
