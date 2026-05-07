@@ -39,8 +39,9 @@ client.on('messageCreate', async (message) => {
   // BOT自身の発言は無視
   if (message.author.bot) return;
 
-  // メンションされていない場合
-  if (!message.mentions.has(client.user)) return;
+  // ボット自身が直接メンションされている場合のみ処理
+  // @everyone や @role メンションは除外
+  if (!message.mentions.has(client.user) || message.mentions.everyone) return;
 
   // テキストが送信できるチャンネルか確認
   if (!message.channel.isTextBased()){
@@ -53,7 +54,7 @@ client.on('messageCreate', async (message) => {
   await message.channel.sendTyping(); 
 
   // メンション部分を除去して質問文だけを取得
-  const ask = message.content.slice(`<@!?${client.user.id}>`.length - 1).trim();
+  const ask = message.content;
 
   console.log(`質問: ${ask}`);
 
