@@ -3,8 +3,8 @@ import { Type, type FunctionDeclaration } from "@google/genai";
 // 使わせたいツール宣言（Geminiに「こういう関数がある」と教える）
 export const tools: FunctionDeclaration[] = [
   {
-    name: 'nowTime',
-    description: 'Get the current time.',
+    name: 'nowJPTime',
+    description: 'Get the current time in Japan Tokyo.',
     parameters: {
       type: Type.OBJECT,
       properties: {
