@@ -162,9 +162,9 @@ client.on('messageCreate', async (message) => {
             content: `Gemini API エラーが発生しました。`,
             // allowedMentions: { repliedUser: false },
           });
+          console.error("Gemini API エラー:", error);
           break;
         }
-        console.error("Gemini API エラー:", error);
       }
 
       tryon++;
