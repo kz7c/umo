@@ -58,6 +58,11 @@ npm start
   - `express`: Webサーバー
   - `dotenv`: 環境変数の管理
   - `node-fetch`: 画像処理に使用
+
+- 外部API
+  - [© OpenStreetMap](https://www.openstreetmap.org/) - 地理情報の取得
+  - [Weather data by Open-Meteo.com](https://open-meteo.com/) - 天気情報の取得	
+
 ## ライセンス
 
 [GNU GENERAL PUBLIC LICENSE](LICENSE)
