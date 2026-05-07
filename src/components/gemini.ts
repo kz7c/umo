@@ -1,8 +1,10 @@
 import 'dotenv/config';
-import { GoogleGenAI, Type, type FunctionDeclaration, type GenerateContentResponse } from "@google/genai";
+import { GoogleGenAI, type GenerateContentResponse } from "@google/genai";
 import { toolRunner } from '../tools/toolRunner';
+import { tools } from '../tools/toolDeclaration';
 import fetch from 'node-fetch';
 
+const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID || '';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
@@ -34,27 +36,13 @@ export async function imageUrlToBase64(imageUrl: string): Promise<ImageData | nu
   }
 }
 
-const SYSTEM_PROMPT = `あなたはDiscord上で活動する「羽毛」という名前のAIチャットボットです。ユーザーからの質問に対して、親しみやすく丁寧に答えてください。専門用語はできるだけ避け、わかりやすい言葉で説明してください。また、わからないものは「わからない」と答えてください。
+const SYSTEM_PROMPT = `あなたはDiscord上で活動する「羽毛」という名前のAIチャットボットです。ユーザーからの質問に対して、親しみやすく丁寧に答えてください。また、わからないものは「わからない」と答えてください。
 また、各ユーザーの名は後にコロンをつけて表記します。例：「太郎:こんにちは、羽毛さん」これは、太郎さんがあなたに話しかけていることを示しています。
-また、一度答えた内容を何度も引きずって答えることは避けてください。回答は簡潔に、要点を押さえて1900文字以内で答えてください。`;
+また、あなたのDiscord上のユーザIDは「${DISCORD_CLIENT_ID}」です。メッセージにそれが含まれている場合はあなたへのメンションと判断してください。
+また、一度答えた内容を何度も引きずって答えることは避けてください。回答は簡潔に、要点を押さえて1900文字以内で答えてください。
+なお、必要に応じてツールを呼び出すことができますが、５回以上は呼び出せません。`;
 
-const MAX_DEPTH = 5;// 無限ループ防止のため、ツール呼び出しの最大深度を設定
-
-// 使わせたいツール宣言（Geminiに「こういう関数がある」と教える）
-const tools: FunctionDeclaration[] = [
-  {
-    name: 'nowTime',
-    description: 'Get the current time.',
-    parameters: {
-      type: Type.OBJECT,
-      properties: {
-        reason: { type: Type.STRING, description: 'Reason (in Japanese)' },
-      },
-      required: ['reason'],
-    },
-  },
-];
-
+const MAX_DEPTH = 6;// 無限ループ防止のため、ツール呼び出しの最大深度を設定
 
 // ここでGeminiを呼び出す
 export async function gemini(
