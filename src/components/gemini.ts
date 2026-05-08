@@ -45,11 +45,18 @@ const SYSTEM_PROMPT = `あなたはDiscord上で活動する「羽毛」とい�
 
 const MAX_DEPTH = 6;// 無限ループ防止のため、ツール呼び出しの最大深度を設定
 
+// ツール実行結果の型定義
+export type ToolExecutionResult = {
+  text: string;
+  toolResponses?: any[];
+};
+
 // ここでGeminiを呼び出す
 export async function gemini(
   ask: string,
   history: { role: 'user' | 'model'; parts: { text: string }[] }[],
-  images?: ImageData[]
+  images?: ImageData[],
+  cachedToolResponses?: any[] // キャッシュされたツール結果
 ) {
   const chat = ai.chats.create({
     model: "gemma-4-31b-it",
@@ -84,6 +91,17 @@ export async function gemini(
   });
 
   let depth = 0;// カウンター変数
+  let toolResponses: any[] = [];// ツール実行結果をキャッシュ
+
+  // キャッシュされたツール結果がある場合は使用
+  if (cachedToolResponses && cachedToolResponses.length > 0) {
+    response = await chat.sendMessage({ message: cachedToolResponses });
+    return {
+      text: response.text?.trim() || '返答できませんでした。',
+      toolResponses: cachedToolResponses,
+    };
+  }
+
   while (response.functionCalls?.length && depth < MAX_DEPTH) {
     depth++;
 
@@ -105,13 +123,15 @@ export async function gemini(
 
         const toolRunnerResult = await toolRunner(name, args);
 
-        return {
+        const toolResponse = {
           functionResponse: {
             name,
             id,
             response: toolRunnerResult ?? { error: 'No response from tool' },
           },
         };
+        toolResponses.push(toolResponse); // キャッシュに追加
+        return toolResponse;
       })
     );
 
@@ -120,6 +140,9 @@ export async function gemini(
 
   }
 
-  return response.text?.trim() || '返答できませんでした。';
+  return {
+    text: response.text?.trim() || '返答できませんでした。',
+    toolResponses: toolResponses.length > 0 ? toolResponses : undefined,
+  };
 }
 
