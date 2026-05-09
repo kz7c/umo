@@ -63,10 +63,16 @@ export async function gemini(
     history: history,
     config: {
       systemInstruction: SYSTEM_PROMPT,
+      toolConfig: {
+          includeServerSideToolInvocations: true,
+      },
       tools: [
         {
           functionDeclarations: tools,
         },
+        {
+          googleSearch: {},
+        }
       ],
     },
   });
