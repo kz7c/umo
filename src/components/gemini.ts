@@ -69,10 +69,8 @@ export async function gemini(
       tools: [
         {
           functionDeclarations: tools,
-        },
-        {
           googleSearch: {},
-        }
+        },
       ],
     },
   });
