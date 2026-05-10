@@ -1,7 +1,7 @@
 import { web } from './components/web';
 import 'dotenv/config';
 import { Client, GatewayIntentBits } from 'discord.js';
-import { gemini, imageUrlToBase64 } from './components/gemini';
+import { gemini } from './components/gemini';
 import getReplyChain from './components/getReplyChain';
 import { setDiscordClient } from './tools/getDiscordInfo';
 
@@ -116,15 +116,13 @@ client.on('messageCreate', async (message) => {
   });
   // console.log(JSON.stringify(history, null, 2));
   
-  // 画像を取得
-  const images: any[] = [];
+  // 画像URLを取得
+  const images: string[] = [];
+
   if (message.attachments.size > 0) {
     for (const [_, attachment] of message.attachments) {
       if (attachment.contentType?.startsWith('image/')) {
-        const imageData = await imageUrlToBase64(attachment.url);
-        if (imageData) {
-          images.push(imageData);
-        }
+        images.push(attachment.url);
       }
     }
   }
@@ -133,18 +131,11 @@ client.on('messageCreate', async (message) => {
 
     let tryon = 0;// 再試行のカウンター変数
     let success = false;
-    let lastError: any = null; // 最後に発生したエラーを保持
-    let cachedToolResponses: any[] | undefined = undefined; // ツール結果をキャッシュ
 
-    while(tryon < 5) {// 最大5回まで再試行
+    while(tryon < 5) {
       try {
         // Gemini API に質問＋履歴＋画像を送信
-        const result = await gemini(ask, history, images.length > 0 ? images : undefined, cachedToolResponses);
-
-        // ツール結果をキャッシュ
-        if (result.toolResponses) {
-          cachedToolResponses = result.toolResponses;
-        }
+        const result: { text: string } = await gemini(ask, null, images.length > 0 ? images : undefined);
 
         try {
         
@@ -164,27 +155,18 @@ client.on('messageCreate', async (message) => {
         break; // 成功したらループを抜ける
 
       } catch (error: any) {// Gemini のエラー
-        lastError = error;
-        // 500系と503以外は再試行しない
-        if (error?.status !== 500 && error?.statusCode !== 500 && error?.status !== 503 && error?.statusCode !== 503 && !error?.message?.includes('500') && !error?.message?.includes('503')) {
+        if(error?.status !== 500 && error?.statusCode !== 500 && !error?.message?.includes('500')){// 500エラー以外は再試行しない
           await message.reply({
             content: `Gemini API エラーが発生しました。`,
             // allowedMentions: { repliedUser: false },
           });
-          console.error("Gemini API エラー (非再試行):", error);
-          if (error?.stack) console.error("Stack:", error.stack);
           break;
         }
-
-        // 500系・503など再試行するエラーは詳細をログに残す
-        console.error("Gemini API エラー (再試行予定):", error);
-        if (error?.stack) console.error("Stack:", error.stack);
+        console.error("Gemini API エラー:", error);
       }
 
       tryon++;
-      if (tryon < 5) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * (2 ** tryon))); // 再試行前に待機（指数関数的に増加）
-      }
+      await new Promise(resolve => setTimeout(resolve, 1000 * tryon)); // 再試行前に待機
     }
 
     // 失敗時のみエラーメッセージを送信
@@ -193,23 +175,16 @@ client.on('messageCreate', async (message) => {
         content: `Gemini API エラーが発生しました。再試行を試みましたが、残念ながら回答を取得できませんでした。`,
         // allowedMentions: { repliedUser: false },
       });
-      console.error("Gemini 最終エラー:", lastError);
-      if (lastError?.stack) console.error("Gemini 最終エラーのスタック:", lastError.stack);
-      
-      return;
     }
 
   } catch(error) {// Geminiのエラーすら返信できない場合
-    console.error("Discordエラー： Gemini のエラーの返信先が見つかりませんでした。", error);
-    if ((error as any)?.stack) console.error("Discordエラーのスタック:", (error as any).stack);
+    console.error("Discordエラー： Gemini のエラーの返信先が見つかりませんでした。");
   
   } finally {
     clearInterval(typingInterval);// タイピングインジケーター停止
     console.log("タスク完了");
   
   }
-
-
 });
 
 
