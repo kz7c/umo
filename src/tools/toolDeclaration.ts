@@ -1,8 +1,18 @@
-import { Type, type FunctionDeclaration } from "@google/genai";
+import { Interactions, Type } from '@google/genai';
 
 // 使わせたいツール宣言（Geminiに「こういう関数がある」と教える）
-export const tools: FunctionDeclaration[] = [
+export const tools: Interactions.Tool[] = [
+  { 
+    type: 'google_search' // Google検索を行うツール
+  },
   {
+    type: 'google_maps'// 地図情報を取得するツール
+  },
+  {
+    type: 'url_context'// URLの内容を取得してコンテキストとして提供するツール
+  },
+  {
+    type: 'function',
     name: 'nowJPTime',
     description: 'Get the current time in Japan Tokyo.',
     parameters: {
@@ -14,6 +24,7 @@ export const tools: FunctionDeclaration[] = [
     },
   },
   {
+    type: 'function',
     name: 'getDiscordUserInfo',
     description: 'Get information about a Discord user.',
     parameters: {
@@ -26,10 +37,11 @@ export const tools: FunctionDeclaration[] = [
     },
   },
   {
+    type: 'function',
     name: 'getLocationInfo',
     description: 'Get geographic coordinates (latitude, longitude) and location name from a location string. Uses OpenStreetMap Nominatim API.',
     parameters: {
-      type: Type.OBJECT,
+      type: "object",
       properties: {
         location: { type: Type.STRING, description: 'Location name (e.g., "Tokyo", "Mount Fuji", "Eiffel Tower", "Paris")' },
         reason: { type: Type.STRING, description: 'Reason (in Japanese)' },
@@ -38,10 +50,11 @@ export const tools: FunctionDeclaration[] = [
     },
   },
   {
+    type: 'function',
     name: 'getWeatherInfo',
     description: 'Get hourly and daily weather information for a location on a specific date. Uses OpenStreetMap Nominatim to find coordinates, then fetches detailed weather from Open-Meteo API.',
     parameters: {
-      type: Type.OBJECT,
+      type: "object",
       properties: {
         latitude: { type: Type.NUMBER, description: 'Latitude of the location' },
         longitude: { type: Type.NUMBER, description: 'Longitude of the location' },
