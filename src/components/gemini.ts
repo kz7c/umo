@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { Interactions, Type ,GoogleGenAI, type GenerateContentResponse } from "@google/genai";
+import { Interactions, Type, GoogleGenAI, type GenerateContentResponse } from "@google/genai";
 import { toolRunner } from '../tools/toolRunner';
 import { tools } from '../tools/toolDeclaration';
 import fetch from 'node-fetch';
@@ -14,8 +14,6 @@ const SYSTEM_PROMPT = `あなたはDiscord上で活動する「羽毛」とい�
 また、一度答えた内容を何度も引きずって答えることは避けてください。回答は簡潔に、要点を押さえて1900文字以内で答えてください。
 なお、必要に応じてツールを呼び出すことができますが、５回以上は呼び出せません。
 重要: ツール実行後、結果に「使用したAPI」や「クレジット表記」が含まれている場合は、それを必ず回答の最後に含めてください。削除したり省略したりしないでください。`;
-
-const MAX_DEPTH = 6;// 無限ループ防止のため、ツール呼び出しの最大深度を設定(使うたびに減らす)
 
 // ツール実行結果の型定義
 export type ToolExecutionResult = {
@@ -32,15 +30,13 @@ export async function gemini(
 ) {
   // メッセージのpartsを構築
   const inputParts: any[] = [{ type: 'text', text: text }];
-  
+
   // 画像がある場合はpartsに追加
   if (images && images.length > 0) {
     for (const uri of images) {
       inputParts.push({
-        inlineData: {
-          type: 'image',
-          uri: uri,
-        },
+        type: 'image',
+        uri: uri,
       });
     }
   }
@@ -50,66 +46,116 @@ export async function gemini(
     model: "gemma-4-31b-it",
     input: inputParts,
     tools: tools,
+    tool_config: { include_server_side_tool_invocations: true },
     system_instruction: SYSTEM_PROMPT,
     ...(interactionId ? { previous_interaction_id: interactionId } : {}),// 前回のやりとりがある場合はIDを渡す
   };
-  const interaction = await ai.interactions.create(interactionFrame);
+  let interaction = await ai.interactions.create(interactionFrame as any);
+
 
   if (!interaction) {
-    return { text: 'Gemini APIからの応答がありませんでした。' };
+    return { text: '500：Gemini APIに接続できませんでした。' ,interactionId: `${interactionId}`};
   }
 
-  /*if(interaction.steps && interaction.steps.length >0){
-    for (const step of interaction.steps) {
-        if (step.type === 'function_call') {
-        console.log(`Function to call: ${step.name}`);
-        console.log(`Arguments: ${JSON.stringify(step.arguments)}`);
-        }
+  let depth = 6;// ツール呼び出しの最大深度を設定
+
+  interactionId = interaction.id;
+
+  //ツール呼び出しを処理するループ
+  while (depth > 0) {
+    // ツール呼び出しがなければループを抜ける
+    if (!interaction.steps) {
+      break;
     }
-  }*/
 
-  let depth = 0;//カウンター変数
-  while (interaction.steps?.length && depth < MAX_DEPTH) {
-    depth++;
+    // function_call ステップを検出
+    const functionCallSteps = interaction.steps.filter(
+      (step: any) => step.type === 'function_call'
+    );
 
-    const toolResponseParts = await Promise.all(
-      response.functionCalls.map(async (fc: any) => {
-        const name = fc.name ?? '';    // 呼び出されたツールの名前
-        const id = fc.id ?? '';        // 呼び出しID（レスポンスと紐づけるため）
-        const args = fc.args ?? {};    // ツールに渡された引数
+    // ツール呼び出しがなければループを抜ける
+    if (functionCallSteps.length === 0) {
+      break;
+    }
 
-        if (!name || !id) {
+    depth--;// ツール利用回数の消費
+
+    // 並列関数呼び出し: 複数の関数を同時に実行
+    const functionResults = await Promise.all(
+      functionCallSteps.map(async (step: any) => {
+        try {
+          const result = await toolRunner(step.name, step.arguments || {});
           return {
-            functionResponse: {
-              name: name || 'unknown',
-              id,
-              response: { error: 'Tool call missing name or id' },
-            },
+            type: 'function_result' as const,
+            name: step.name,
+            call_id: step.id,
+            result: [
+              {
+                type: 'text' as const,
+                text: typeof result === 'string' ? result : JSON.stringify(result),
+              },
+            ],
+          };
+        } catch (error) {
+          console.error(`ツール実行エラー (${step.name}):`, error);
+          return {
+            type: 'function_result' as const,
+            name: step.name,
+            call_id: step.id,
+            result: [
+              {
+                type: 'text' as const,
+                text: `エラーが発生しました: ${error instanceof Error ? error.message : String(error)}`,
+              },
+            ],
           };
         }
-
-        const toolRunnerResult = await toolRunner(name, args);
-
-        const toolResponse = {
-          functionResponse: {
-            name,
-            id,
-            response: toolRunnerResult ?? { error: 'No response from tool' },
-          },
-        };
-        toolResponses.push(toolResponse); // キャッシュに追加
-        return toolResponse;
       })
     );
 
-    // ツール呼び出しの結果を Gemini に送信し、次のレスポンスを取得
-    response = await chat.sendMessage({ message: toolResponseParts });
 
+    // 結果をモデルに送り返す
+    interaction = await ai.interactions.create({
+      model: "gemma-4-31b-it",
+      input: functionResults,
+      tools: tools,
+      tool_config: { include_server_side_tool_invocations: true },
+      previous_interaction_id: interactionId,
+    } as any);
+
+    if (!interaction) {
+      console.error('Gemini APIからの応答がありませんでした。');
+      return { text: '500：Gemini APIがツールを処理できませんでした。', interactionId: `${interactionId}` };
+    }
   }
 
-  return {
-    text: response.text?.trim() || '返答できませんでした。',
-    toolResponses: toolResponses.length > 0 ? toolResponses : undefined,
-  };
-}
+  if (!interaction.steps) {
+    console.error('Gemini APIからの応答にstepsが含まれていませんでした。');
+    return { text: '500：Gemini APIからの応答が破損しました。', interactionId: `${interactionId}` };
+  }
 
+  // 1. steps が存在しない、または空の場合はエラーを返す
+  if (!interaction.steps || interaction.steps.length === 0) {
+    console.error('Gemini APIからの応答にstepsが含まれていませんでした。');
+    return { text: '500：Gemini APIからの応答が破損しました。', interactionId: `${interactionId}` };
+  }
+
+  // 2. モデルのテキスト回答が含まれる 'model_output' ステップを探す
+  // （最後が thought や function_call で終わっている可能性を考慮し、確実に回答を取得する）
+  const modelTurnSteps = interaction.steps.filter((s: any) => s.type === 'model_output');
+  const lastModelTurn = modelTurnSteps.at(-1) as any; // 型エラー回避のため一時的に any キャスト
+
+  if (!lastModelTurn) {
+    console.error('Gemini APIからの応答にmodel_outputステップが含まれていませんでした。');
+    return { text: '500：Gemini APIからテキストの応答がありませんでした。', interactionId: `${interactionId}` };
+  }
+
+  // 3. テキストを安全に抽出（Interactions API の仕様に合わせる）
+  // プロパティが存在しない場合に備えてオプショナルチェーン (?.) を使用します
+  const replyText =
+    lastModelTurn.content?.[0]?.text ||
+    '500：Gemini APIからの応答テキストが空でした。';
+
+  console.log('Geminiからの最終応答:', replyText);
+  return { text: replyText, interactionId: `${interactionId}` };
+}

@@ -2,7 +2,7 @@ import { web } from './components/web';
 import 'dotenv/config';
 import { Client, GatewayIntentBits } from 'discord.js';
 import { gemini } from './components/gemini';
-import getReplyChain from './components/getReplyChain';
+import getReplyChain from './function/getReplyChain';
 import { setDiscordClient } from './tools/getDiscordInfo';
 
 const client = new Client({
@@ -33,7 +33,7 @@ client.once('clientReady', () => {
 
 // メッセージを受信時
 client.on('messageCreate', async (message) => {
-  
+
   if (!client.user) {
     console.error("致命的なエラー：client.user が未定義です。");
     process.exit(1);
@@ -47,7 +47,7 @@ client.on('messageCreate', async (message) => {
   if (!message.mentions.has(client.user) || message.mentions.everyone) return;
 
   // テキストが送信できるチャンネルか確認
-  if (!message.channel.isTextBased()){
+  if (!message.channel.isTextBased()) {
     console.error("エラー：テキストが送信できないチャンネルからメッセージを受け取りました。");
     return;
   }
@@ -85,7 +85,7 @@ client.on('messageCreate', async (message) => {
   }*/
 
   //console.log(fetchedMessages);
-  
+
   // Gemini に渡す会話履歴
   const history: {
     role: 'user' | 'model';
@@ -98,24 +98,24 @@ client.on('messageCreate', async (message) => {
     const name = msg.author.globalName ?? msg.author.username;
 
     if (msg.author.id === client.user?.id) {// 羽毛の発言
-    
+
       history.push({
         role: 'model',
         parts: [{ text: `${msg.content}` }],
       });
 
     } else {// 他者の発言
-      
+
       history.push({
         role: 'user',
         parts: [{ text: `${name}:${msg.content}` }],
       });
-    
+
     }
 
   });
   // console.log(JSON.stringify(history, null, 2));
-  
+
   // 画像URLを取得
   const images: string[] = [];
 
@@ -126,47 +126,52 @@ client.on('messageCreate', async (message) => {
       }
     }
   }
-  
-  try{
 
-    let tryon = 0;// 再試行のカウンター変数
+  try {
+
+    let tryon = 0; // 再試行のカウンター変数
     let success = false;
+    let interactionId: string | null = null;
+    const baseMaxTries = 5;
 
-    while(tryon < 5) {
+    while (true) {
+      const maxTries = interactionId ? 10 : baseMaxTries;
+      if (tryon >= maxTries || success) break;
+
       try {
         // Gemini API に質問＋履歴＋画像を送信
-        const result: { text: string } = await gemini(ask, null, images.length > 0 ? images : undefined);
+        const result: { text: string; interactionId: string } = await gemini(ask, interactionId, images.length > 0 ? images : undefined);
+
+        interactionId = result.interactionId;
 
         try {
-        
           // 生成結果をメンションせずに Discord に送信
           await message.reply({
             content: result.text,
             //allowedMentions: { repliedUser: false },
           });
-        
-        } catch (sendError) {// 返信できなかった場合
-      
-          console.error("Discordエラー：返信先が見つかりませんでした。");
 
+          success = true;
+        } catch (sendError) {
+          console.error("Discordエラー：返信先が見つかりませんでした。", sendError);
+          success = true; // 送信先が見つからない場合は再試行しても意味がないため成功扱いにする
         }
 
-        success = true;
         break; // 成功したらループを抜ける
 
-      } catch (error: any) {// Gemini のエラー
-        if(error?.status !== 500 && error?.statusCode !== 500 && !error?.message?.includes('500')){// 500エラー以外は再試行しない
-          await message.reply({
-            content: `Gemini API エラーが発生しました。`,
-            // allowedMentions: { repliedUser: false },
-          });
+      } catch (error: any) {
+        console.error("Gemini API エラー:", error);
+        const status = error?.status ?? error?.statusCode;
+        // 429 (rate limit) や 5xx は再試行対象。明らかなクライアントエラー(4xx で 429 以外)は再試行しない。
+        const retryable = (status === 429) || (typeof status === 'number' && status >= 500) || (status === undefined);
+        if (!retryable) {
+          // 非再試行エラーはループを抜け、最終的にユーザーへ失敗通知する
           break;
         }
-        console.error("Gemini API エラー:", error);
       }
 
       tryon++;
-      await new Promise(resolve => setTimeout(resolve, 1000 * tryon)); // 再試行前に待機
+      await new Promise(resolve => setTimeout(resolve, 1000 * (2 ** tryon))); // 再試行前に待機
     }
 
     // 失敗時のみエラーメッセージを送信
@@ -177,13 +182,13 @@ client.on('messageCreate', async (message) => {
       });
     }
 
-  } catch(error) {// Geminiのエラーすら返信できない場合
+  } catch (error) {// Geminiのエラーすら返信できない場合
     console.error("Discordエラー： Gemini のエラーの返信先が見つかりませんでした。");
-  
+
   } finally {
     clearInterval(typingInterval);// タイピングインジケーター停止
     console.log("タスク完了");
-  
+
   }
 });
 
