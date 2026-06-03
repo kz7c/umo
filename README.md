@@ -65,4 +65,4 @@ npm start
 
 ## ライセンス
 
-[GNU GENERAL PUBLIC LICENSE](LICENSE)
+[Mozilla Public License 2.0](LICENSE)
