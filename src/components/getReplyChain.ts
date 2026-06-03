@@ -1,6 +1,14 @@
 import { Message } from "discord.js";
+import type {
+  ChatCompletionAssistantMessageParam,
+  ChatCompletionUserMessageParam,
+} from "openai/resources/chat/completions";
 
-export async function messageToOpenAI(message: Message) {
+type HistoryMessage =
+  | ChatCompletionUserMessageParam
+  | ChatCompletionAssistantMessageParam;
+
+export async function getReplyChain(message: Message): Promise<HistoryMessage[]> {
   const content: any[] = [];
 
   // テキスト
@@ -26,8 +34,10 @@ export async function messageToOpenAI(message: Message) {
     }
   }
 
-  return {
-    role: message.author.bot ? "assistant" : "user",
-    content,
-  };
+  return [
+    {
+      role: message.author.bot ? "assistant" : "user",
+      content,
+    },
+  ];
 }
