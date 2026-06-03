@@ -81,7 +81,7 @@ client.on('messageCreate', async (message) => {
         
           // 生成結果をメンションせずに Discord に送信
           await message.reply({
-            content: result.content ?? "",
+            content: result,
             //allowedMentions: { repliedUser: false },
           });
         
@@ -94,7 +94,7 @@ client.on('messageCreate', async (message) => {
         success = true;
         break; // 成功したらループを抜ける
 
-      } catch (error: any) {// AI のエラー
+      } catch (error: any) {// openai のエラー
         lastError = error;
         // 500系と503以外は再試行しない
         if (error?.status !== 500 && error?.statusCode !== 500 && error?.status !== 503 && error?.statusCode !== 503 && !error?.message?.includes('500') && !error?.message?.includes('503')) {
@@ -113,7 +113,7 @@ client.on('messageCreate', async (message) => {
       }
 
       tryon--;
-      if (tryon < 5) {
+      if (0 < tryon) {
         await new Promise(resolve => setTimeout(resolve, 1000 * (2 ** tryon))); // 再試行前に待機（指数関数的に増加）
       }
     }
