@@ -1,18 +1,33 @@
 import { Message } from "discord.js";
-export default async function getReplyChain(message: Message) {// 返信チェーンを取得する関数
-    const chain = [message];
 
-    let current = message;
+export async function messageToOpenAI(message: Message) {
+  const content: any[] = [];
 
-    while (current.reference) {
-        try {
-            const parent = await current.fetchReference();
-            chain.push(parent);
-            current = parent;
-        } catch (err) {
-            break;
-        }
+  // テキスト
+  if (message.content) {
+    content.push({
+      type: "text",
+      text: message.content,
+    });
+  }
+
+  // 添付画像
+  for (const attachment of message.attachments.values()) {
+    if (attachment.contentType?.startsWith("image/")) {
+      const response = await fetch(attachment.url);
+      const buffer = Buffer.from(await response.arrayBuffer());
+
+      content.push({
+        type: "image_url",
+        image_url: {
+          url: `data:${attachment.contentType};base64,${buffer.toString("base64")}`,
+        },
+      });
     }
+  }
 
-    return chain.reverse(); // 元の順番
+  return {
+    role: message.author.bot ? "assistant" : "user",
+    content,
+  };
 }
