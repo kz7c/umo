@@ -1,7 +1,7 @@
 import { web } from './components/web';
 import 'dotenv/config';
 import { Client, GatewayIntentBits } from 'discord.js';
-import { gemini, imageUrlToBase64 } from './components/gemini';
+import { gemini } from './components/gemini';
 import getReplyChain from './components/getReplyChain';
 import { setDiscordClient } from './tools/getDiscordInfo';
 
@@ -116,15 +116,12 @@ client.on('messageCreate', async (message) => {
   });
   // console.log(JSON.stringify(history, null, 2));
   
-  // 画像を取得
-  const images: any[] = [];
+  // 画像URLをそのまま渡す
+  const images: string[] = [];
   if (message.attachments.size > 0) {
     for (const [_, attachment] of message.attachments) {
       if (attachment.contentType?.startsWith('image/')) {
-        const imageData = await imageUrlToBase64(attachment.url);
-        if (imageData) {
-          images.push(imageData);
-        }
+        images.push(attachment.url);
       }
     }
   }
@@ -163,21 +160,21 @@ client.on('messageCreate', async (message) => {
         success = true;
         break; // 成功したらループを抜ける
 
-      } catch (error: any) {// Gemini のエラー
+      } catch (error: any) {// Groq のエラー
         lastError = error;
         // 500系と503以外は再試行しない
         if (error?.status !== 500 && error?.statusCode !== 500 && error?.status !== 503 && error?.statusCode !== 503 && !error?.message?.includes('500') && !error?.message?.includes('503')) {
           await message.reply({
-            content: `Gemini API エラーが発生しました。`,
+            content: `Groq API エラーが発生しました。`,
             // allowedMentions: { repliedUser: false },
           });
-          console.error("Gemini API エラー (非再試行):", error);
+          console.error("Groq API エラー (非再試行):", error);
           if (error?.stack) console.error("Stack:", error.stack);
           break;
         }
 
         // 500系・503など再試行するエラーは詳細をログに残す
-        console.error("Gemini API エラー (再試行予定):", error);
+        console.error("Groq API エラー (再試行予定):", error);
         if (error?.stack) console.error("Stack:", error.stack);
       }
 
@@ -190,17 +187,17 @@ client.on('messageCreate', async (message) => {
     // 失敗時のみエラーメッセージを送信
     if (!success) {
       await message.reply({
-        content: `Gemini API エラーが発生しました。再試行を試みましたが、残念ながら回答を取得できませんでした。`,
+        content: `Groq API エラーが発生しました。再試行を試みましたが、残念ながら回答を取得できませんでした。`,
         // allowedMentions: { repliedUser: false },
       });
-      console.error("Gemini 最終エラー:", lastError);
-      if (lastError?.stack) console.error("Gemini 最終エラーのスタック:", lastError.stack);
+      console.error("Groq 最終エラー:", lastError);
+      if (lastError?.stack) console.error("Groq 最終エラーのスタック:", lastError.stack);
       
       return;
     }
 
-  } catch(error) {// Geminiのエラーすら返信できない場合
-    console.error("Discordエラー： Gemini のエラーの返信先が見つかりませんでした。", error);
+  } catch(error) {// Groqのエラーすら返信できない場合
+    console.error("Discordエラー： Groq のエラーの返信先が見つかりませんでした。", error);
     if ((error as any)?.stack) console.error("Discordエラーのスタック:", (error as any).stack);
   
   } finally {
