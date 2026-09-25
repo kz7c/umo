@@ -1,7 +1,7 @@
 import { web } from './components/web';
 import 'dotenv/config';
 import { Client, GatewayIntentBits } from 'discord.js';
-import { gemini } from './components/gemini';
+import { gemini } from './components/groq';
 import getReplyChain from './components/getReplyChain';
 import { setDiscordClient } from './tools/getDiscordInfo';
 
