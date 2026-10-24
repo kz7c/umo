@@ -1,7 +1,7 @@
-import { getDiscordUserInfo } from './getDiscordInfo';
-import { getLocation } from './getLocation';
-import { getWeather } from './getWeather';
-import { formatWeatherData } from './getWeather';
+import { getDiscordUserInfo } from './getDiscordInfo.js';
+import { getLocation } from './getLocation.js';
+import { getWeather } from './getWeather.js';
+import { formatWeatherData } from './getWeather.js';
 
 const LOCATION_CREDIT = `[© OpenStreetMap](https://www.openstreetmap.org/) - 地理情報の取得`;
 const WEATHER_CREDIT = `[Weather data by Open-Meteo.com](https://open-meteo.com/) - 天気情報の取得`;
