@@ -1,9 +1,10 @@
-import { web } from './components/web';
+import type { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions";
 import 'dotenv/config';
+import { web } from './components/web.js';
 import { Client, GatewayIntentBits } from 'discord.js';
-import { gemini } from './components/groq';
-import getReplyChain from './components/getReplyChain';
-import { setDiscordClient } from './tools/getDiscordInfo';
+import getReplyChain from './components/getReplyChain.js';
+import { setDiscordClient } from './tools/getDiscordInfo.js';
+import { groq_core } from './components/groq.js';
 
 const client = new Client({
   intents: [
@@ -63,125 +64,82 @@ client.on('messageCreate', async (message) => {
 
   console.log(`質問: ${ask}`);
 
-  // 直近のメッセージを取得（今の message は除外）
-  let fetchedMessages;
-
   // 返信チェーン全てを取得
+  let fetchedMessages;
   fetchedMessages = await getReplyChain(message);
-  /*if (message.channel.isThread()) {
-    // スレッド内：直前の20件
-    fetchedMessages = await message.channel.messages.fetch({
-      limit: 20,
-      before: message.id,
-    });
-
-  } else {
-    // 通常チャンネル：直前の10件
-    fetchedMessages = await message.channel.messages.fetch({
-      limit: 10,
-      before: message.id,
-    });
-
-  }*/
-
-  //console.log(fetchedMessages);
   
-  // Gemini に渡す会話履歴
-  const history: {
-    role: 'user' | 'model';
-    parts: { text: string }[];
-  }[] = [];
+  console.log(fetchedMessages);
+  
+  // 会話履歴
+  const history: ChatCompletionMessageParam[] = [];
 
   // role と content に分けて履歴を整形
-  fetchedMessages.forEach(msg => {
-
+  fetchedMessages.forEach((msg) => {
     const name = msg.author.globalName ?? msg.author.username;
-
-    if (msg.author.id === client.user?.id) {// 羽毛の発言
     
+    // Bot自身の発言
+    if (msg.author.id === client.user?.id) {
       history.push({
-        role: 'model',
-        parts: [{ text: `${msg.content}` }],
+        role: 'assistant',
+        content: msg.content,
       });
-
-    } else {// 他者の発言
-      
-      history.push({
-        role: 'user',
-        parts: [{ text: `${name}:${msg.content}` }],
-      });
-    
+      return;
     }
 
+    // ユーザーの発言
+    const text = `${name}:${msg.content}`;
+
+    const imageParts = [...msg.attachments.values()]
+      .filter((attachment) =>
+        attachment.contentType?.startsWith('image/'),
+      )
+      .map((attachment) => ({
+        type: 'image_url' as const,
+        image_url: {
+          url: attachment.url,
+        },
+      }));
+
+    history.push({
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text,
+        },
+        ...imageParts,
+      ],
+    });
   });
-  // console.log(JSON.stringify(history, null, 2));
-  
-  // 画像URLをそのまま渡す
-  const images: string[] = [];
-  if (message.attachments.size > 0) {
-    for (const [_, attachment] of message.attachments) {
-      if (attachment.contentType?.startsWith('image/')) {
-        images.push(attachment.url);
-      }
-    }
-  }
-  
-  try{
 
-    let tryon = 0;// 再試行のカウンター変数
+
+
+  
+  // ================================ここからAIへのリクエスト===================================
+  try{
     let success = false;
     let lastError: any = null; // 最後に発生したエラーを保持
-    let cachedToolResponses: any[] | undefined = undefined; // ツール結果をキャッシュ
-
-    while(tryon < 5) {// 最大5回まで再試行
+    try {
+      // Gemini API に質問＋履歴＋画像を送信
+      const result = await groq_core(history);
       try {
-        // Gemini API に質問＋履歴＋画像を送信
-        const result = await gemini(ask, history, images.length > 0 ? images : undefined, cachedToolResponses);
+        // 生成結果をメンションせずに Discord に送信
+        await message.reply({
+          content: result,
+          //allowedMentions: { repliedUser: false },
+        });
 
-        // ツール結果をキャッシュ
-        if (result.toolResponses) {
-          cachedToolResponses = result.toolResponses;
-        }
+      } catch (sendError) {// 返信できなかった場合    
+        console.error("Discordエラー：返信先が見つかりませんでした。");
 
-        try {
-        
-          // 生成結果をメンションせずに Discord に送信
-          await message.reply({
-            content: result.text,
-            //allowedMentions: { repliedUser: false },
-          });
-        
-        } catch (sendError) {// 返信できなかった場合
-      
-          console.error("Discordエラー：返信先が見つかりませんでした。");
-
-        }
-
-        success = true;
-        break; // 成功したらループを抜ける
-
-      } catch (error: any) {// Groq のエラー
-        lastError = error;
-        // 500系と503以外は再試行しない
-        if (error?.status !== 500 && error?.statusCode !== 500 && error?.status !== 503 && error?.statusCode !== 503 && !error?.message?.includes('500') && !error?.message?.includes('503')) {
-          await message.reply({
-            content: `Groq API エラーが発生しました。`,
-            // allowedMentions: { repliedUser: false },
-          });
-          console.error("Groq API エラー (非再試行):", error);
-          if (error?.stack) console.error("Stack:", error.stack);
-          break;
-        }
-
-        // 500系・503など再試行するエラーは詳細をログに残す
-        console.error("Groq API エラー (再試行予定):", error);
-        if (error?.stack) console.error("Stack:", error.stack);
       }
 
-      tryon++;
-      if (tryon < 5) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * (2 ** tryon))); // 再試行前に待機（指数関数的に増加）
-      }
+      success = true;
+
+    } catch (error: any) {// Groq のエラー
+      success = false;
+      lastError = error;
+
     }
 
     // 失敗時のみエラーメッセージを送信
