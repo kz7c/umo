@@ -1,68 +1,57 @@
-# umo (羽毛bot)
+# UMO（羽毛bot）
 
-Discord上で動作する、Google Gemini APIを活用したAIチャットボットです。
+Discord 上で動作する、Groq API を利用した AI チャットボットです。
 
 ## 特徴
 
-- **Gemini AI 連携**: 最新のGemma-4モデル（gemma-4-31b-it）を使用して、自然な会話が可能です。
-- **文脈理解**: Discordの返信チェーンを遡り、過去の会話の流れを理解した上で回答します。
-- **ヘルスチェック用Webサーバー**: Discordボットの稼働状況を確認するための軽量なExpressサーバーを内蔵しています。
-- **親しみやすい返答**: 「羽毛bot」として、親しみやすく丁寧な言葉遣いで対応します。
+- Groq API と `qwen/qwen3.8-27b` による 高速 AI 応答
+- Discord の返信チェーンを利用した会話履歴の取得
+- 画像添付ファイルを含むメッセージへの対応
+- 天気・位置情報・Discord ユーザー情報ツール
+- 稼働確認用の HTTP サーバー（ポート 3000）
 
 ## 動作要件
 
-- Node.js (v18以上推奨)
+- Node.js 18 以上
 - npm
 - Discord Bot トークン
-- Google Gemini API キー
+- Groq API キー
 
-## 設定
-
-プロジェクトのルートディレクトリに `.env` ファイルを作成し、以下の環境変数を設定してください。
-
-```env
-DISCORD_TOKEN=あなたのDiscordボットトークン
-GEMINI_API_KEY=あなたのGeminiAPIキー
-```
-
-## 使い方
-
-### ビルド
-
-TypeScriptファイルをコンパイルします。
+## セットアップ
 
 ```bash
+npm install
 npm run build
 ```
 
-### 起動
+プロジェクトルートに `.env` を作成します。
 
-ボットを起動します。
+```env
+DISCORD_TOKEN=your_discord_bot_token
+DISCORD_CLIENT_ID=your_discord_client_id
+GROQ_API_KEY=your_groq_api_key
+```
+
+## 起動
 
 ```bash
 npm start
 ```
 
-### Discordでの操作
+起動後、`http://localhost:3000/` にアクセスすると稼働状態を確認できます。
 
-1. ボットがサーバーに参加していることを確認します。
-2. ボットに対してメンションをして、話しかけます。
-3. ボットのリプライに対してさらに返信することで、会話を続けることができます。
+## Discord での使い方
 
-## 技術スタック
+1. Bot を Discord サーバーに招待します。
+2. Bot にメンションして話しかけます。
+3. Bot の返信に返信すると、返信チェーンを文脈として利用します。
 
-- **言語**: TypeScript
-- **ライブラリ**:
-  - `discord.js`: Discord APIとの連携
-  - `@google/genai`: Gemini APIの利用
-  - `express`: Webサーバー
-  - `dotenv`: 環境変数の管理
-  - `node-fetch`: 画像処理に使用
+## 外部サービス
 
-- 外部API
-  - [© OpenStreetMap](https://www.openstreetmap.org/) - 地理情報の取得
-  - [Weather data by Open-Meteo.com](https://open-meteo.com/) - 天気情報の取得	
+- [Groq](https://groq.com/)
+- [© OpenStreetMap](https://www.openstreetmap.org/) - 地理情報の取得
+- [Weather data by Open-Meteo.com](https://open-meteo.com/) - 天気情報の取得
 
 ## ライセンス
 
-[GNU GENERAL PUBLIC LICENSE](LICENSE)
+[GNU AFFERO GENERAL PUBLIC LICENSE](LICENSE)
