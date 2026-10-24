@@ -1,7 +1,7 @@
 import type { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions";
 import 'dotenv/config';
 import { web } from './components/web.js';
-import { Client, GatewayIntentBits } from 'discord.js';
+import { Client, GatewayIntentBits, MessageFlags } from 'discord.js';
 import getReplyChain from './components/getReplyChain.js';
 import { setDiscordClient } from './tools/getDiscordInfo.js';
 import { groq_core } from './components/groq.js';
@@ -68,7 +68,7 @@ client.on('messageCreate', async (message) => {
   let fetchedMessages;
   fetchedMessages = await getReplyChain(message);
   
-  console.log(fetchedMessages);
+  //console.log(fetchedMessages);
   
   // 会話履歴
   const history: ChatCompletionMessageParam[] = [];
@@ -126,6 +126,7 @@ client.on('messageCreate', async (message) => {
         // 生成結果をメンションせずに Discord に送信
         await message.reply({
           content: result,
+          flags: MessageFlags.SuppressEmbeds,
           //allowedMentions: { repliedUser: false },
         });
 
