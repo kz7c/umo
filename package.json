@@ -14,7 +14,7 @@
   "keywords": [],
   "author": "kz7c",
   "license": "GPL-3.0",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/kazu70/umo/issues"
   },
