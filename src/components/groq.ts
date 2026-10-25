@@ -4,7 +4,7 @@ import { tools } from '../tools/toolDeclaration.js';
 import { toolRunner } from '../tools/toolRunner.js';
 
 const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID || '';
-const GROQ_API_KEY = process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
 const groq = new Groq({ apiKey: GROQ_API_KEY });
 
 const GROQ_MODEL = 'qwen/qwen3.8-27b';
@@ -20,6 +20,11 @@ const SYSTEM_PROMPT = `あなたはDiscord上で活動する「羽毛」とい�
 
 
 export async function groq_core(history?: Groq.Chat.ChatCompletionMessageParam[]):Promise<string> {  // メッセージの取得 ※暫定
+  
+  if (!DISCORD_CLIENT_ID || !GROQ_API_KEY) {
+    throw new Error('環境変数が設定されていません');
+  }
+
   const messages : any[] = [
     {
       role: "system",

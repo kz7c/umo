@@ -65,5 +65,21 @@ export const tools = [
       },
     },
   },
+
+  {
+    type: "function",
+    function: {
+      name: 'getSearch',
+      description: 'Search for information on the internet.',
+      parameters: {
+        type: 'object',
+        properties: {
+          terms: { type: 'string', description: 'Search terms' },
+          reason: { type: 'string', description: 'Reason (in Japanese)' },
+        },
+        required: ['terms', 'reason'],
+      },
+    },
+  },
 ];
 

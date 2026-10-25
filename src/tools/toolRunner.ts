@@ -2,6 +2,7 @@ import { getDiscordUserInfo } from './getDiscordInfo.js';
 import { getLocation } from './getLocation.js';
 import { getWeather } from './getWeather.js';
 import { formatWeatherData } from './getWeather.js';
+const { getSearch } = await import('./getSearch.js');
 
 const LOCATION_CREDIT = `[© OpenStreetMap](https://www.openstreetmap.org/) - 地理情報の取得`;
 const WEATHER_CREDIT = `[Weather data by Open-Meteo.com](https://open-meteo.com/) - 天気情報の取得`;
@@ -24,7 +25,7 @@ export async function toolRunner(name: string, args: any): Promise<any> {
         if (!args || !args.location) {
           return { error: 'location is required' };
         }
-        return { data: await getLocation(args.location), credit: LOCATION_CREDIT };
+        return await getLocation(args.location);
 
     case 'getWeatherInfo':
         console.log(`ツール呼び出し: ${name} args:`, args);
@@ -35,14 +36,18 @@ export async function toolRunner(name: string, args: any): Promise<any> {
 
         // 天気データを取得して整形して返す
         const weatherData = await getWeather(args.latitude, args.longitude, args.date, args.timezone || 'Asia/Tokyo', args.locationName);
-        const formatted = formatWeatherData(weatherData) + WEATHER_CREDIT;
-        return JSON.parse(JSON.stringify({
-          data: formatted,
-          credit: WEATHER_CREDIT
-        }));
+        const formatted = formatWeatherData(weatherData);
 
-    
+        return formatted;
+
+    case 'getSearch':
+        console.log(`ツール呼び出し: ${name} args:`, args);
+        if (!args || !args.terms) {
+          return { error: 'text is required' };
+        }
+        return await getSearch(args.terms);
+
     default:
-      return { error: `不明なツール: ${name}` };
+        return { error: `不明なツール: ${name}` };
   }
 }

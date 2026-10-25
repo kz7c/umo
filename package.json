@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/kazu70/umo#readme",
   "dependencies": {
+    "@tavily/core": "^0.7.14",
     "discord.js": "^14.25.1",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
