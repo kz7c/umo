@@ -38,6 +38,7 @@ export async function groq_core(history?: Groq.Chat.ChatCompletionMessageParam[]
       messages,
       tools,
       tool_choice: 'auto',
+      max_tokens: 900
     },
     { 
       maxRetries: MAX_RETRIES
