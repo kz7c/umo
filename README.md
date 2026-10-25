@@ -8,6 +8,7 @@ Discord 上で動作する、Groq API を利用した AI チャットボット�
 - Discord の返信チェーンを利用した会話履歴の取得
 - 画像添付ファイルを含むメッセージへの対応
 - 天気・位置情報・Discord ユーザー情報ツール
+- オンライン検索
 - 稼働確認用の HTTP サーバー（ポート 3000）
 
 ## 動作要件
@@ -49,6 +50,7 @@ npm start
 ## 外部サービス
 
 - [Groq](https://groq.com/)
+- [Tavily](https://tavily.com/) - 検索
 - [© OpenStreetMap](https://www.openstreetmap.org/) - 地理情報の取得
 - [Weather data by Open-Meteo.com](https://open-meteo.com/) - 天気情報の取得
 
