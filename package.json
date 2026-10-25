@@ -1,6 +1,6 @@
 {
   "name": "umo",
-  "version": "1.0.0",
+  "version": "4.0.1",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
@@ -13,7 +13,7 @@
   },
   "keywords": [],
   "author": "kz7c",
-  "license": "GPL-3.0",
+  "license": "AGPL-3.0",
   "type": "module",
   "bugs": {
     "url": "https://github.com/kazu70/umo/issues"
